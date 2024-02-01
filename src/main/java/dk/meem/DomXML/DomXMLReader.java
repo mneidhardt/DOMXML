@@ -5,7 +5,6 @@ import org.w3c.dom.Element;
 import org.w3c.dom.NamedNodeMap;
 import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
-//import org.w3c.dom.xpath.XPathExpression;
 import org.xml.sax.SAXException;
 
 import javax.xml.XMLConstants;
@@ -21,18 +20,25 @@ import javax.xml.xpath.XPathFactory;
 
 import java.io.File;
 import java.io.IOException;
-import java.io.InputStream;
 import java.util.HashMap;
 import java.util.Iterator;
 
+/* Class for reading DOM and searching with namespaces.
+ * Based on this:
+ * https://stackoverflow.com/questions/6390339/how-to-query-xml-using-namespaces-in-java-with-xpath/6392700#6392700 
+ */
 public class DomXMLReader {
 	private Document doc;
 	private String ns1;
+	private String ns1uri;
 	private String ns2;
+	private String ns2uri;
 	
-	public DomXMLReader(String defaultNS, String targetNS) {
-		this.ns1 = defaultNS;
-		this.ns2 = targetNS;
+	public DomXMLReader(String ns1, String ns1uri, String ns2, String ns2uri) {
+		this.ns1 = ns1;
+		this.ns1uri = ns1uri;
+		this.ns2 = ns2;
+		this.ns2uri = ns2uri;
 	}
 	
 	/* Get value of attribute names attname,
@@ -68,8 +74,8 @@ public class DomXMLReader {
 		xpath.setNamespaceContext(new NamespaceContext() {
 		    public String getNamespaceURI(String prefix) {
 		        if (prefix == null) throw new NullPointerException("Null prefix");
-		        else if (ns1.equals(prefix)) return "http://www.w3.org/2001/XMLSchema";
-		        else if (ns2.equals(prefix)) return "http://data.gov.dk/schemas/matrikel/1/replikering";
+		        else if (ns1.equals(prefix)) return ns1uri;
+		        else if (ns2.equals(prefix)) return ns2uri;
 		        return XMLConstants.NULL_NS_URI;
 		    }
 
@@ -84,10 +90,7 @@ public class DomXMLReader {
 		    }
 		});
 
-		// note that all the elements in the expression are prefixed with our namespace mapping!
-		XPathExpression expr = xpath.compile(xpathstr); //"/nons:schema/nons:element[@name][@type]");
-
-		// assuming you've got your XML document in a variable named doc...
+		XPathExpression expr = xpath.compile(xpathstr);
 		NodeList nlist = (NodeList) expr.evaluate(this.doc, XPathConstants.NODESET);
 
 		return nlist;
@@ -96,21 +99,19 @@ public class DomXMLReader {
 	/* This is the same as readDOM1, but using an external class.
 	 * For that reason I prefer the above version.
 	 */
-	public void readDOM2() throws XPathExpressionException {
+	public NodeList readDOM2(String xpathstr) throws XPathExpressionException {
 		XPathFactory factory = XPathFactory.newInstance();
 		XPath xpath = factory.newXPath();
 		HashMap<String, String> prefMap = new HashMap<String, String>() {{
-		    put("nons", "http://www.w3.org/2001/XMLSchema");
-		    put("r", "http://data.gov.dk/schemas/matrikel/1/replikering");
+		    put(ns1, ns1uri);
+		    put(ns2, ns2uri);
 		}};
 		SimpleNamespaceContext namespaces = new SimpleNamespaceContext(prefMap);
 		xpath.setNamespaceContext(namespaces);
-		XPathExpression expr = xpath.compile("/nons:schema/nons:complexType");
+		XPathExpression expr = xpath.compile(xpathstr);
 		NodeList nlist = (NodeList) expr.evaluate(this.doc, XPathConstants.NODESET);
-		for (int i=0; i<nlist.getLength(); i++) {
-			dumpNode(nlist.item(i));
-			System.out.println();
-		}
+
+		return nlist;
 	}
 
 	public void createDOM(String filename) throws ParserConfigurationException, SAXException, IOException {
