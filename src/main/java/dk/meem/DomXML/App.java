@@ -24,7 +24,7 @@ public class App {
 		DomXMLReader xr = new DomXMLReader(ns1, ns1uri, ns2, ns2uri);
 		xr.createDOM("20230516.v2.0.0.Matrikel.xsd");
 
-		NodeList nl = (NodeList) xr.readDOM1("/" + ns1 + ":schema/" + ns1 + ":element[@name][@type]");
+		NodeList nl = (NodeList) xr.xpathSearch("/" + ns1 + ":schema/" + ns1 + ":element[@name][@type]");
 
 		for (int i = 0; i < nl.getLength(); i++) {
 			String name = xr.getAttributeValue(nl.item(i), "name");		// Not actually needed for this.
@@ -48,7 +48,7 @@ public class App {
 
 			System.out.println("XP2=" + xpathstr);
 
-			NodeList nl2 = (NodeList) xr.readDOM1(xpathstr);
+			NodeList nl2 = (NodeList) xr.xpathSearch(xpathstr);
 			for (int j = 0; j < nl2.getLength(); j++) {
 				// xr.dumpNode(nl2.item(j));
 				String name2 = xr.getAttributeValue(nl2.item(j), "name");

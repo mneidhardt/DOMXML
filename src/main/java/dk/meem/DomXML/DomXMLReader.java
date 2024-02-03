@@ -22,6 +22,7 @@ import java.io.File;
 import java.io.IOException;
 import java.util.HashMap;
 import java.util.Iterator;
+import java.util.Map;
 
 /* Class for reading DOM and searching with namespaces.
  * Based on this:
@@ -29,16 +30,12 @@ import java.util.Iterator;
  */
 public class DomXMLReader {
 	private Document doc;
-	private String ns1;
-	private String ns1uri;
-	private String ns2;
-	private String ns2uri;
+	private Map<String, String> nsmap;
 	
 	public DomXMLReader(String ns1, String ns1uri, String ns2, String ns2uri) {
-		this.ns1 = ns1;
-		this.ns1uri = ns1uri;
-		this.ns2 = ns2;
-		this.ns2uri = ns2uri;
+		this.nsmap = new HashMap<String, String>();
+		this.nsmap.put(ns1, ns1uri);
+		this.nsmap.put(ns2, ns2uri);
 	}
 	
 	/* Get value of attribute names attname,
@@ -66,47 +63,10 @@ public class DomXMLReader {
 		}
 	}
 	
-	public NodeList readDOM1(String xpathstr) throws XPathExpressionException {
+	public NodeList xpathSearch(String xpathstr) throws XPathExpressionException {
 		XPathFactory factory = XPathFactory.newInstance();
 		XPath xpath = factory.newXPath();
-
-		// there's no default implementation for NamespaceContext...seems kind of silly, no?
-		xpath.setNamespaceContext(new NamespaceContext() {
-		    public String getNamespaceURI(String prefix) {
-		        if (prefix == null) throw new NullPointerException("Null prefix");
-		        else if (ns1.equals(prefix)) return ns1uri;
-		        else if (ns2.equals(prefix)) return ns2uri;
-		        return XMLConstants.NULL_NS_URI;
-		    }
-
-		    // This method isn't necessary for XPath processing.
-		    public String getPrefix(String uri) {
-		        throw new UnsupportedOperationException();
-		    }
-
-		    // This method isn't necessary for XPath processing either.
-		    public Iterator getPrefixes(String uri) {
-		        throw new UnsupportedOperationException();
-		    }
-		});
-
-		XPathExpression expr = xpath.compile(xpathstr);
-		NodeList nlist = (NodeList) expr.evaluate(this.doc, XPathConstants.NODESET);
-
-		return nlist;
-	}
-
-	/* This is the same as readDOM1, but using an external class.
-	 * For that reason I prefer the above version.
-	 */
-	public NodeList readDOM2(String xpathstr) throws XPathExpressionException {
-		XPathFactory factory = XPathFactory.newInstance();
-		XPath xpath = factory.newXPath();
-		HashMap<String, String> prefMap = new HashMap<String, String>() {{
-		    put(ns1, ns1uri);
-		    put(ns2, ns2uri);
-		}};
-		SimpleNamespaceContext namespaces = new SimpleNamespaceContext(prefMap);
+		SimpleNamespaceContext namespaces = new SimpleNamespaceContext(nsmap);
 		xpath.setNamespaceContext(namespaces);
 		XPathExpression expr = xpath.compile(xpathstr);
 		NodeList nlist = (NodeList) expr.evaluate(this.doc, XPathConstants.NODESET);
